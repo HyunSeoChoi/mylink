@@ -5,16 +5,26 @@ import { FormEvent, useEffect, useState } from "react"
 import {
   addDoc,
   collection,
+  deleteDoc,
+  doc,
   getDocs,
   orderBy,
   query,
   serverTimestamp,
+  setDoc,
   type Timestamp,
+  updateDoc,
 } from "firebase/firestore"
 
-import { LinkList } from "@/components/link-list"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  Card,
+  CardAction,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { links as initialLinks, type LinkItem } from "@/data/links"
 import { db } from "@/lib/firebase"
@@ -55,13 +65,35 @@ function getValidUrl(value: string) {
   }
 }
 
+function getErrorMessage(title: string, url: string) {
+  if (!title.trim()) {
+    return "제목을 입력해주세요"
+  }
+
+  if (!url.trim()) {
+    return "주소를 입력해주세요"
+  }
+
+  if (!getValidUrl(url.trim())) {
+    return "올바른 주소를 입력해주세요"
+  }
+
+  return ""
+}
+
 export default function MyPage() {
-  const [links, setLinks] = useState<LinkItem[]>(initialLinks)
+  const [links, setLinks] = useState<LinkItem[]>([])
   const [title, setTitle] = useState("")
   const [url, setUrl] = useState("")
   const [error, setError] = useState("")
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editTitle, setEditTitle] = useState("")
+  const [editUrl, setEditUrl] = useState("")
+  const [deleteTarget, setDeleteTarget] = useState<LinkItem | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const [isUpdating, setIsUpdating] = useState(false)
 
   useEffect(() => {
     async function loadLinks() {
@@ -69,20 +101,32 @@ export default function MyPage() {
         const snapshot = await getDocs(
           query(linksCollection, orderBy("createdAt", "asc"))
         )
-        const storedLinks = snapshot.docs.map((doc, index) => {
-          const data = doc.data() as FirestoreLink
 
-          return {
-            id: doc.id,
-            title: data.title ?? "Untitled",
-            description: data.description ?? data.url ?? "",
-            url: data.url ?? "#",
-            icon: data.icon ?? "LK",
-            color: data.color ?? linkColors[index % linkColors.length],
-          }
-        })
+        if (snapshot.empty) {
+          await Promise.all(
+            initialLinks.map((link) =>
+              setDoc(doc(db, "users", "anonymous", "links", `default-${link.id}`), {
+                title: link.title,
+                description: link.description,
+                url: link.url,
+                icon: link.icon,
+                color: link.color,
+                createdAt: serverTimestamp(),
+                updatedAt: serverTimestamp(),
+              })
+            )
+          )
 
-        setLinks([...initialLinks, ...storedLinks])
+          const seededSnapshot = await getDocs(
+            query(linksCollection, orderBy("createdAt", "asc"))
+          )
+
+          setLinks(seededSnapshot.docs.map(toLinkItem))
+          setError("")
+          return
+        }
+
+        setLinks(snapshot.docs.map(toLinkItem))
         setError("")
       } catch {
         setError("저장된 링크를 불러오지 못했습니다")
@@ -99,31 +143,22 @@ export default function MyPage() {
 
     const trimmedTitle = title.trim()
     const trimmedUrl = url.trim()
+    const validationError = getErrorMessage(trimmedTitle, trimmedUrl)
 
-    if (!trimmedTitle) {
-      setError("제목을 입력해주세요")
-      return
-    }
-
-    if (!trimmedUrl) {
-      setError("주소를 입력해주세요")
-      return
-    }
-
-    const validUrl = getValidUrl(trimmedUrl)
-
-    if (!validUrl) {
-      setError("올바른 주소를 입력해주세요")
+    if (validationError) {
+      setError(validationError)
       return
     }
 
     setIsSaving(true)
 
+    const validUrl = getValidUrl(trimmedUrl)
+
     const nextLink: LinkItem = {
       id: `pending-${Date.now()}`,
       title: trimmedTitle,
-      description: validUrl,
-      url: validUrl,
+      description: validUrl ?? trimmedUrl,
+      url: validUrl ?? trimmedUrl,
       icon: getIcon(trimmedTitle) || "LK",
       color: linkColors[links.length % linkColors.length],
     }
@@ -156,6 +191,86 @@ export default function MyPage() {
     }
   }
 
+  function startEdit(link: LinkItem) {
+    setEditingId(String(link.id))
+    setEditTitle(link.title)
+    setEditUrl(link.url)
+    setError("")
+  }
+
+  function cancelEdit() {
+    setEditingId(null)
+    setEditTitle("")
+    setEditUrl("")
+    setError("")
+  }
+
+  async function handleUpdate(link: LinkItem) {
+    const trimmedTitle = editTitle.trim()
+    const trimmedUrl = editUrl.trim()
+    const validationError = getErrorMessage(trimmedTitle, trimmedUrl)
+
+    if (validationError) {
+      setError(validationError)
+      return
+    }
+
+    const validUrl = getValidUrl(trimmedUrl)
+    const nextLink = {
+      ...link,
+      title: trimmedTitle,
+      description: validUrl ?? trimmedUrl,
+      url: validUrl ?? trimmedUrl,
+      icon: getIcon(trimmedTitle) || "LK",
+    }
+
+    setIsUpdating(true)
+
+    try {
+      await updateDoc(doc(db, "users", "anonymous", "links", String(link.id)), {
+        title: nextLink.title,
+        description: nextLink.description,
+        url: nextLink.url,
+        icon: nextLink.icon,
+        updatedAt: serverTimestamp(),
+      })
+
+      setLinks((currentLinks) =>
+        currentLinks.map((currentLink) =>
+          currentLink.id === link.id ? nextLink : currentLink
+        )
+      )
+      cancelEdit()
+    } catch {
+      setError("링크를 수정하지 못했습니다")
+    } finally {
+      setIsUpdating(false)
+    }
+  }
+
+  async function handleDelete() {
+    if (!deleteTarget) {
+      return
+    }
+
+    setIsDeleting(true)
+
+    try {
+      await deleteDoc(
+        doc(db, "users", "anonymous", "links", String(deleteTarget.id))
+      )
+      setLinks((currentLinks) =>
+        currentLinks.filter((link) => link.id !== deleteTarget.id)
+      )
+      setDeleteTarget(null)
+      setError("")
+    } catch {
+      setError("링크를 삭제하지 못했습니다")
+    } finally {
+      setIsDeleting(false)
+    }
+  }
+
   return (
     <main className="min-h-screen bg-[#7dd3fc] px-4 py-6 text-black sm:px-6">
       <section className="mx-auto flex w-full max-w-2xl flex-col gap-5">
@@ -165,8 +280,8 @@ export default function MyPage() {
           </p>
           <h1 className="mt-2 text-4xl font-black">내 링크 관리</h1>
           <p className="mt-3 text-base font-semibold leading-7">
-            새 링크를 추가하면 Firestore에 저장됩니다. 이제 새로고침해도
-            추가한 링크가 유지됩니다.
+            Firestore에 저장된 링크를 추가, 수정, 삭제합니다. 새로고침해도
+            변경사항이 유지됩니다.
           </p>
         </header>
 
@@ -225,7 +340,19 @@ export default function MyPage() {
               저장된 링크를 불러오는 중입니다
             </p>
           ) : (
-            <LinkList links={links} />
+            <ManageLinkList
+              editTitle={editTitle}
+              editUrl={editUrl}
+              editingId={editingId}
+              isUpdating={isUpdating}
+              links={links}
+              onCancelEdit={cancelEdit}
+              onDelete={setDeleteTarget}
+              onEditTitleChange={setEditTitle}
+              onEditUrlChange={setEditUrl}
+              onSaveEdit={handleUpdate}
+              onStartEdit={startEdit}
+            />
           )}
         </section>
 
@@ -236,6 +363,158 @@ export default function MyPage() {
           공개 페이지 보기
         </Link>
       </section>
+
+      {deleteTarget ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+          <div className="w-full max-w-md rounded-[12px] border-[3px] border-black bg-white p-5 text-black shadow-[6px_6px_0_#000]">
+            <h2 className="text-2xl font-black">정말 삭제하시겠습니까?</h2>
+            <p className="mt-3 text-base font-semibold leading-7">
+              &quot;{deleteTarget.title}&quot; 링크가 삭제됩니다.
+            </p>
+            <p className="mt-3 rounded-[12px] border-[3px] border-black bg-[#FF8FAB] px-4 py-3 text-sm font-black">
+              이 작업은 되돌릴 수 없습니다.
+            </p>
+            <div className="mt-5 grid grid-cols-2 gap-3">
+              <Button
+                type="button"
+                className="h-11 rounded-[12px] border-[3px] border-black bg-white text-sm font-black text-black shadow-[4px_4px_0_#000] hover:bg-[#FEF08A]"
+                onClick={() => setDeleteTarget(null)}
+              >
+                취소
+              </Button>
+              <Button
+                type="button"
+                className="h-11 rounded-[12px] border-[3px] border-black bg-[#ef4444] text-sm font-black text-white shadow-[4px_4px_0_#000] hover:bg-[#dc2626]"
+                disabled={isDeleting}
+                onClick={handleDelete}
+              >
+                {isDeleting ? "삭제 중..." : "삭제하기"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </main>
+  )
+}
+
+function toLinkItem(docSnapshot: { id: string; data: () => FirestoreLink }) {
+  const data = docSnapshot.data()
+
+  return {
+    id: docSnapshot.id,
+    title: data.title ?? "Untitled",
+    description: data.description ?? data.url ?? "",
+    url: data.url ?? "#",
+    icon: data.icon ?? "LK",
+    color: data.color ?? "bg-white",
+  }
+}
+
+type ManageLinkListProps = {
+  editTitle: string
+  editUrl: string
+  editingId: string | null
+  isUpdating: boolean
+  links: LinkItem[]
+  onCancelEdit: () => void
+  onDelete: (link: LinkItem) => void
+  onEditTitleChange: (value: string) => void
+  onEditUrlChange: (value: string) => void
+  onSaveEdit: (link: LinkItem) => void
+  onStartEdit: (link: LinkItem) => void
+}
+
+function ManageLinkList({
+  editTitle,
+  editUrl,
+  editingId,
+  isUpdating,
+  links,
+  onCancelEdit,
+  onDelete,
+  onEditTitleChange,
+  onEditUrlChange,
+  onSaveEdit,
+  onStartEdit,
+}: ManageLinkListProps) {
+  return (
+    <div className="mt-7 flex flex-col gap-3">
+      {links.map((link) => {
+        const isEditing = editingId === String(link.id)
+
+        return (
+          <Card
+            key={link.id}
+            className={`gap-0 rounded-[12px] border-[3px] border-black px-0 py-0 text-black shadow-[4px_4px_0_#000] ring-0 ${link.color}`}
+          >
+            <CardHeader className="grid-cols-[auto_1fr] items-center gap-3 px-4 py-3">
+              <span className="flex size-11 items-center justify-center rounded-full border-[3px] border-black bg-white text-sm font-black">
+                {link.icon}
+              </span>
+
+              {isEditing ? (
+                <CardContent className="flex flex-col gap-3 px-0">
+                  <Input
+                    value={editTitle}
+                    onChange={(event) => onEditTitleChange(event.target.value)}
+                    className="h-11 rounded-[12px] border-[3px] border-black bg-white px-3 text-base font-black text-black"
+                  />
+                  <Input
+                    value={editUrl}
+                    onChange={(event) => onEditUrlChange(event.target.value)}
+                    className="h-11 rounded-[12px] border-[3px] border-black bg-white px-3 text-base font-semibold text-black"
+                  />
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button
+                      type="button"
+                      className="h-10 rounded-[12px] border-[3px] border-black bg-[#5B5FC7] text-sm font-black text-white shadow-[3px_3px_0_#000]"
+                      disabled={isUpdating}
+                      onClick={() => onSaveEdit(link)}
+                    >
+                      {isUpdating ? "저장 중..." : "저장"}
+                    </Button>
+                    <Button
+                      type="button"
+                      className="h-10 rounded-[12px] border-[3px] border-black bg-white text-sm font-black text-black shadow-[3px_3px_0_#000]"
+                      onClick={onCancelEdit}
+                    >
+                      취소
+                    </Button>
+                  </div>
+                </CardContent>
+              ) : (
+                <>
+                  <CardContent className="px-0">
+                    <CardTitle className="text-lg font-black">
+                      {link.title}
+                    </CardTitle>
+                    <CardDescription className="mt-1 break-all text-sm font-semibold leading-6 text-black">
+                      {link.url}
+                    </CardDescription>
+                  </CardContent>
+                  <CardAction className="col-span-2 mt-3 flex gap-2 sm:col-start-2 sm:mt-0 sm:justify-self-end">
+                    <Button
+                      type="button"
+                      className="h-9 rounded-[12px] border-[3px] border-black bg-white px-3 text-sm font-black text-black shadow-[3px_3px_0_#000]"
+                      onClick={() => onStartEdit(link)}
+                    >
+                      수정
+                    </Button>
+                    <Button
+                      type="button"
+                      className="h-9 rounded-[12px] border-[3px] border-black bg-[#ef4444] px-3 text-sm font-black text-white shadow-[3px_3px_0_#000]"
+                      onClick={() => onDelete(link)}
+                    >
+                      삭제
+                    </Button>
+                  </CardAction>
+                </>
+              )}
+            </CardHeader>
+          </Card>
+        )
+      })}
+    </div>
   )
 }

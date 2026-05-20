@@ -43,9 +43,6 @@ Future version:
 
 ## Missing Features Found From Scenarios
 
-- A future admin page is needed for link management.
-- Link data should eventually move out of hardcoded page code.
-- URL validation will be needed before saving user-entered links.
 - Authentication will be needed before personal link management.
 
 ## Scenario 5: Owner Adds a Link With Firestore
@@ -59,3 +56,23 @@ Future version:
 7. The input fields are cleared.
 8. The new link appears in the list.
 9. If the page is refreshed, the saved link is loaded again from Firestore.
+
+## Scenario 6: Owner Edits a Link
+
+1. The owner opens `/mypage`.
+2. The owner clicks the edit button on a link.
+3. The link title and URL turn into input fields.
+4. The owner changes the values.
+5. If validation passes, Firestore is updated.
+6. The link list shows the updated values.
+7. If the page is refreshed, the edited values remain.
+
+## Scenario 7: Owner Deletes a Link
+
+1. The owner opens `/mypage`.
+2. The owner clicks the delete button on a link.
+3. A confirmation modal shows the link title and warning message.
+4. The owner can cancel to keep the link.
+5. If the owner clicks delete, Firestore removes the link document.
+6. The link disappears from the list.
+7. If the page is refreshed, the deleted link stays removed.

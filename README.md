@@ -11,6 +11,7 @@ MyLink is a simple Linktree-style profile page built for the week 1-3 practice p
 - Data-driven link list built from dummy link data
 - Temporary link creation page at `/mypage`
 - Firestore-backed link saving and loading
+- Inline link editing and delete confirmation
 - Git and GitHub ready project structure
 
 ## Tech Stack
@@ -56,3 +57,4 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 - Install shadcn/ui and build a data-driven link list UI
 - Build `/mypage` link creation with form validation
 - Connect Firebase Firestore for persistent link storage
+- Add Firestore-backed link update and delete
