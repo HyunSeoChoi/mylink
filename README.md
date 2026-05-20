@@ -82,6 +82,7 @@ npm run build
 - [PRD](docs/PRD.md)
 - [User Scenarios](docs/user-scenarios.md)
 - [Wireframe](docs/wireframe.md)
+- [Course Progress](docs/course-progress.md)
 - [Final Test](docs/final-test.md)
 - [Retrospective](docs/retrospective.md)
 
