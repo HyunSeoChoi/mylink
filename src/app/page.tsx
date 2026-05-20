@@ -14,6 +14,11 @@ const links = [
     description: "Projects, experiments, and contact info",
     href: "https://github.com/HyunSeoChoi",
   },
+  {
+    title: "GitHub Repository",
+    description: "Source code for this MyLink practice project",
+    href: "https://github.com/HyunSeoChoi/mylink",
+  },
 ];
 
 export default function Home() {
