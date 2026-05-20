@@ -24,6 +24,7 @@ MyLink helps visitors quickly understand who the owner is and move to the owner'
 - Let the owner log in with Google before managing links.
 - Load saved links from `users/{userId}/links`.
 - Store profile data in `users/{userId}/profile/main`.
+- Store username ownership in `usernames/{username}`.
 - Let the owner edit username, display name, and bio.
 - Provide a public `/username` page that loads the matching profile and links.
 - Keep Firestore reads public and writes limited to the logged-in owner.

@@ -11,19 +11,16 @@ import {
 import {
   addDoc,
   collection,
-  collectionGroup,
   deleteDoc,
   doc,
   getDoc,
   getDocs,
-  limit,
   orderBy,
   query,
   serverTimestamp,
   setDoc,
   type Timestamp,
   updateDoc,
-  where,
 } from "firebase/firestore"
 
 import { Button } from "@/components/ui/button"
@@ -104,26 +101,20 @@ function getProfileDoc(userId: string) {
   return doc(db, "users", userId, "profile", "main")
 }
 
-async function findUsernameOwner(username: string) {
-  const snapshot = await getDocs(
-    query(
-      collectionGroup(db, "profile"),
-      where("username", "==", username),
-      limit(1)
-    )
-  )
+function getUsernameDoc(username: string) {
+  return doc(db, "usernames", username)
+}
 
-  if (snapshot.empty) {
+async function findUsernameOwner(username: string) {
+  const snapshot = await getDoc(getUsernameDoc(username))
+
+  if (!snapshot.exists()) {
     return null
   }
 
-  const docSnapshot = snapshot.docs[0]
-  const data = docSnapshot.data()
+  const data = snapshot.data()
 
-  return (
-    docSnapshot.ref.parent.parent?.id ??
-    (typeof data.userId === "string" ? data.userId : null)
-  )
+  return typeof data.userId === "string" ? data.userId : null
 }
 
 export default function MyPage() {
@@ -213,6 +204,11 @@ export default function MyPage() {
           await setDoc(getProfileDoc(user.uid), {
             ...nextProfile,
             createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp(),
+          })
+          await setDoc(getUsernameDoc(nextProfile.username), {
+            userId: user.uid,
+            username: nextProfile.username,
             updatedAt: serverTimestamp(),
           })
 
@@ -391,8 +387,19 @@ export default function MyPage() {
         displayName: nextDisplayName,
         bio: nextBio,
       }
+      const previousUsername = profile?.username
 
       try {
+        await setDoc(
+          getUsernameDoc(nextUsername),
+          {
+            userId: user.uid,
+            username: nextUsername,
+            updatedAt: serverTimestamp(),
+          },
+          { merge: true }
+        )
+
         await setDoc(
           getProfileDoc(user.uid),
           {
@@ -406,11 +413,15 @@ export default function MyPage() {
 
         setProfileError(
           code === "permission-denied"
-            ? `프로필 저장 권한이 막혔습니다. 로그인 UID: ${user.uid}`
+            ? `username 또는 프로필 저장 권한이 막혔습니다. 로그인 UID: ${user.uid}`
             : "프로필을 저장하지 못했습니다"
         )
         setProfileStatus("")
         return
+      }
+
+      if (previousUsername && previousUsername !== nextUsername) {
+        await deleteDoc(getUsernameDoc(previousUsername)).catch(() => {})
       }
 
       setProfile(nextProfile)

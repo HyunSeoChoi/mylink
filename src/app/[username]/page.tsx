@@ -5,12 +5,11 @@ import { useParams } from "next/navigation"
 import { type ReactNode, useEffect, useMemo, useState } from "react"
 import {
   collection,
-  collectionGroup,
+  doc,
+  getDoc,
   getDocs,
-  limit,
   orderBy,
   query,
-  where,
 } from "firebase/firestore"
 
 import { LinkList } from "@/components/link-list"
@@ -52,30 +51,32 @@ export default function PublicProfilePage() {
           return
         }
 
-        const profileSnapshot = await getDocs(
-          query(
-            collectionGroup(db, "profile"),
-            where("username", "==", username),
-            limit(1)
-          )
-        )
+        const usernameSnapshot = await getDoc(doc(db, "usernames", username))
 
-        if (profileSnapshot.empty) {
+        if (!usernameSnapshot.exists()) {
           setIsNotFound(true)
           return
         }
 
-        const profileDoc = profileSnapshot.docs[0]
-        const profileData = profileDoc.data()
+        const usernameData = usernameSnapshot.data()
         const userId =
-          profileDoc.ref.parent.parent?.id ??
-          (typeof profileData.userId === "string" ? profileData.userId : "")
+          typeof usernameData.userId === "string" ? usernameData.userId : ""
 
         if (!userId) {
           setIsNotFound(true)
           return
         }
 
+        const profileSnapshot = await getDoc(
+          doc(db, "users", userId, "profile", "main")
+        )
+
+        if (!profileSnapshot.exists()) {
+          setIsNotFound(true)
+          return
+        }
+
+        const profileData = profileSnapshot.data()
         const nextProfile = {
           userId,
           username:

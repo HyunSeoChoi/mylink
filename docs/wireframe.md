@@ -69,6 +69,12 @@ users
             ├── color
             ├── createdAt
             └── updatedAt
+
+usernames
+└── {username}
+    ├── userId
+    ├── username
+    └── updatedAt
 ```
 
 ## Link Management Page
