@@ -236,6 +236,19 @@ export default function MyPage() {
               ? data.bio
               : getDefaultProfile(user).bio,
         }
+        const ownerId = await findUsernameOwner(nextProfile.username)
+
+        if (!ownerId || ownerId === user.uid) {
+          await setDoc(
+            getUsernameDoc(nextProfile.username),
+            {
+              userId: user.uid,
+              username: nextProfile.username,
+              updatedAt: serverTimestamp(),
+            },
+            { merge: true }
+          )
+        }
 
         updateProfileForm(nextProfile)
         setProfileError("")
