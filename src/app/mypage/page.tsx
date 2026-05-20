@@ -393,8 +393,20 @@ export default function MyPage() {
       setBio(nextBio)
       setProfileError("")
       setProfileStatus("프로필이 저장되었습니다")
-    } catch {
-      setProfileError("프로필을 저장하지 못했습니다")
+    } catch (error) {
+      const code =
+        typeof error === "object" &&
+        error !== null &&
+        "code" in error &&
+        typeof error.code === "string"
+          ? error.code
+          : ""
+
+      setProfileError(
+        code === "permission-denied"
+          ? "Firestore Rules 권한 때문에 프로필을 저장하지 못했습니다"
+          : "프로필을 저장하지 못했습니다"
+      )
       setProfileStatus("")
     } finally {
       setIsProfileSaving(false)
