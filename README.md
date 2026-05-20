@@ -7,6 +7,7 @@ MyLink is a simple Linktree-style profile page built for the week 1-3 practice p
 - Personal profile section with name and short introduction
 - Link buttons for Instagram, Blog, and Portfolio
 - Responsive layout for mobile and desktop screens
+- Neobrutalism profile styling with bold borders and hard shadows
 - Git and GitHub ready project structure
 
 ## Tech Stack
@@ -39,3 +40,4 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 - Commit the first version
 - Push the project to the GitHub `mylink` repository
 - Make one small update, commit again, and push again
+- Apply responsive Neobrutalism styling to the profile page
