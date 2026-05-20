@@ -5,7 +5,7 @@
 - Project name: MyLink
 - Purpose: Collect a personal profile and frequently used links on one shareable page.
 - Target users: Students, creators, job seekers, and anyone who wants to share several links from one profile URL.
-- Current goal: Build a polished public profile page with Google-login-protected Firestore CRUD link management.
+- Current goal: Build a polished public profile page with shareable usernames and Google-login-protected Firestore CRUD link management.
 
 ## Core Value
 
@@ -23,6 +23,10 @@ MyLink helps visitors quickly understand who the owner is and move to the owner'
 - Store newly added links in Firestore.
 - Let the owner log in with Google before managing links.
 - Load saved links from `users/{userId}/links`.
+- Store profile data in `users/{userId}/profile/main`.
+- Let the owner edit username, display name, and bio.
+- Provide a public `/username` page that loads the matching profile and links.
+- Keep Firestore reads public and writes limited to the logged-in owner.
 - Edit saved links with inline editing.
 - Delete saved links after a confirmation modal.
 - Open each link in a new browser tab.
@@ -31,8 +35,8 @@ MyLink helps visitors quickly understand who the owner is and move to the owner'
 
 ### Later
 
-- Count link clicks.
 - Deploy the site with Vercel.
+- Count link clicks.
 
 ## Detailed Requirements
 

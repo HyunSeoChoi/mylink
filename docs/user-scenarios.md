@@ -25,13 +25,13 @@ Current version:
 3. The owner checks the page in the browser.
 4. The owner commits and pushes the update to GitHub.
 
-Future version:
+Current version:
 
 1. The owner logs in.
 2. The owner opens the link management page.
-3. The owner adds, edits, deletes, or reorders links.
+3. The owner adds, edits, or deletes links.
 4. The owner saves changes.
-5. Visitors see the updated link list.
+5. Visitors see the updated link list on the owner's `/username` page.
 
 ## Scenario 4: Owner Checks Responsive Design
 
@@ -43,7 +43,7 @@ Future version:
 
 ## Missing Features Found From Scenarios
 
-- Public profile publishing from each user's saved Firestore links will be needed later.
+- Vercel deployment will be needed before the public URL can be shared outside local development.
 
 ## Scenario 5: Owner Adds a Link With Firestore
 
@@ -86,3 +86,21 @@ Future version:
 2. The owner clicks the logout button.
 3. The management form is hidden.
 4. The page asks for Google login before links can be managed again.
+
+## Scenario 9: Owner Edits Public Profile
+
+1. The owner opens `/mypage`.
+2. The owner logs in with Google.
+3. The owner edits username, display name, and bio.
+4. The owner saves the profile.
+5. If the username is already used, the page shows an error.
+6. If validation passes, the profile is saved to Firestore.
+7. The public page link points to `/{username}`.
+
+## Scenario 10: Visitor Opens a Username Page
+
+1. A visitor opens `/{username}`.
+2. The app finds the matching profile in Firestore.
+3. The app loads that user's link list.
+4. The visitor sees the profile name, bio, and links.
+5. If the username does not exist, the page shows a 404-style message.

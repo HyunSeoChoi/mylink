@@ -53,6 +53,13 @@
 ```text
 users
 └── {userId}
+    ├── profile
+    │   └── main
+    │       ├── username
+    │       ├── displayName
+    │       ├── bio
+    │       ├── createdAt
+    │       └── updatedAt
     └── links
         └── {linkId}
             ├── title
@@ -71,6 +78,12 @@ users
 │ MyLink Admin                       │
 │ 내 링크 관리                        │
 │ [ Google 로그인 / 로그아웃 ]        │
+│                                    │
+│ 프로필 수정                         │
+│ [ username                     ]   │
+│ [ 표시 이름                    ]   │
+│ [ 소개글                       ]   │
+│ [ 프로필 저장 ]                    │
 │                                    │
 │ Title                              │
 │ [ YouTube                      ]   │

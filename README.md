@@ -13,6 +13,8 @@ MyLink is a simple Linktree-style profile page built for the week 1-3 practice p
 - Firestore-backed link saving and loading
 - Inline link editing and delete confirmation
 - Google login for owner-only link management
+- Editable profile data and shareable `/username` pages
+- Firestore rules for public reads and owner-only writes
 - Git and GitHub ready project structure
 
 ## Tech Stack
@@ -60,3 +62,4 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 - Connect Firebase Firestore for persistent link storage
 - Add Firestore-backed link update and delete
 - Add Firebase Auth Google login and user-specific link storage
+- Add profile editing, `/username` public pages, and Firestore rules

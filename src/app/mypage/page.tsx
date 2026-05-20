@@ -11,15 +11,19 @@ import {
 import {
   addDoc,
   collection,
+  collectionGroup,
   deleteDoc,
   doc,
+  getDoc,
   getDocs,
+  limit,
   orderBy,
   query,
   serverTimestamp,
   setDoc,
   type Timestamp,
   updateDoc,
+  where,
 } from "firebase/firestore"
 
 import { Button } from "@/components/ui/button"
@@ -34,6 +38,12 @@ import {
 import { Input } from "@/components/ui/input"
 import { links as initialLinks, type LinkItem } from "@/data/links"
 import { auth, db, googleProvider } from "@/lib/firebase"
+import {
+  getDefaultProfile,
+  getUsernameError,
+  normalizeUsername,
+  type UserProfile,
+} from "@/lib/profile"
 
 const linkColors = ["bg-[#FF8FAB]", "bg-[#8DD3C7]", "bg-[#A78BFA]", "bg-white"]
 
@@ -90,10 +100,44 @@ function getLinksCollection(userId: string) {
   return collection(db, "users", userId, "links")
 }
 
+function getProfileDoc(userId: string) {
+  return doc(db, "users", userId, "profile", "main")
+}
+
+async function findUsernameOwner(username: string) {
+  const snapshot = await getDocs(
+    query(
+      collectionGroup(db, "profile"),
+      where("username", "==", username),
+      limit(1)
+    )
+  )
+
+  if (snapshot.empty) {
+    return null
+  }
+
+  const docSnapshot = snapshot.docs[0]
+  const data = docSnapshot.data()
+
+  return (
+    docSnapshot.ref.parent.parent?.id ??
+    (typeof data.userId === "string" ? data.userId : null)
+  )
+}
+
 export default function MyPage() {
   const [user, setUser] = useState<User | null>(null)
   const [isAuthReady, setIsAuthReady] = useState(false)
   const [isSigningIn, setIsSigningIn] = useState(false)
+  const [profile, setProfile] = useState<UserProfile | null>(null)
+  const [username, setUsername] = useState("")
+  const [displayName, setDisplayName] = useState("")
+  const [bio, setBio] = useState("")
+  const [profileError, setProfileError] = useState("")
+  const [profileStatus, setProfileStatus] = useState("")
+  const [isProfileLoading, setIsProfileLoading] = useState(true)
+  const [isProfileSaving, setIsProfileSaving] = useState(false)
   const [links, setLinks] = useState<LinkItem[]>([])
   const [title, setTitle] = useState("")
   const [url, setUrl] = useState("")
@@ -113,6 +157,13 @@ export default function MyPage() {
       setIsAuthReady(true)
 
       if (!nextUser) {
+        setProfile(null)
+        setUsername("")
+        setDisplayName("")
+        setBio("")
+        setProfileError("")
+        setProfileStatus("")
+        setIsProfileLoading(false)
         setLinks([])
         setIsLoading(false)
       }
@@ -128,6 +179,75 @@ export default function MyPage() {
 
     if (!user) {
       return
+    }
+
+    function updateProfileForm(nextProfile: UserProfile) {
+      setProfile(nextProfile)
+      setUsername(nextProfile.username)
+      setDisplayName(nextProfile.displayName)
+      setBio(nextProfile.bio)
+    }
+
+    async function loadProfile() {
+      if (!user) {
+        return
+      }
+
+      try {
+        setIsProfileLoading(true)
+        const snapshot = await getDoc(getProfileDoc(user.uid))
+
+        if (!snapshot.exists()) {
+          const defaultProfile = getDefaultProfile(user)
+          const defaultOwner = await findUsernameOwner(defaultProfile.username)
+          const nextProfile =
+            defaultOwner && defaultOwner !== user.uid
+              ? {
+                  ...defaultProfile,
+                  username: normalizeUsername(
+                    `${defaultProfile.username}-${user.uid.slice(0, 6)}`
+                  ),
+                }
+              : defaultProfile
+
+          await setDoc(getProfileDoc(user.uid), {
+            ...nextProfile,
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp(),
+          })
+
+          updateProfileForm(nextProfile)
+          setProfileError("")
+          return
+        }
+
+        const data = snapshot.data()
+        const nextProfile = {
+          userId:
+            typeof data.userId === "string" && data.userId
+              ? data.userId
+              : user.uid,
+          username:
+            typeof data.username === "string" && data.username
+              ? data.username
+              : getDefaultProfile(user).username,
+          displayName:
+            typeof data.displayName === "string" && data.displayName
+              ? data.displayName
+              : getDefaultProfile(user).displayName,
+          bio:
+            typeof data.bio === "string" && data.bio
+              ? data.bio
+              : getDefaultProfile(user).bio,
+        }
+
+        updateProfileForm(nextProfile)
+        setProfileError("")
+      } catch {
+        setProfileError("프로필을 불러오지 못했습니다")
+      } finally {
+        setIsProfileLoading(false)
+      }
     }
 
     async function loadLinks() {
@@ -176,6 +296,7 @@ export default function MyPage() {
       }
     }
 
+    loadProfile()
     loadLinks()
   }, [isAuthReady, user])
 
@@ -195,10 +316,88 @@ export default function MyPage() {
   async function handleSignOut() {
     try {
       await signOut(auth)
+      setProfile(null)
+      setUsername("")
+      setDisplayName("")
+      setBio("")
+      setProfileError("")
+      setProfileStatus("")
       setLinks([])
       setError("")
     } catch {
       setError("로그아웃에 실패했습니다")
+    }
+  }
+
+  async function handleProfileSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+
+    if (!user) {
+      setProfileError("로그인이 필요합니다")
+      return
+    }
+
+    const nextUsername = normalizeUsername(username)
+    const nextDisplayName = displayName.trim()
+    const nextBio = bio.trim()
+    const usernameError = getUsernameError(nextUsername)
+
+    if (usernameError) {
+      setProfileError(usernameError)
+      setProfileStatus("")
+      return
+    }
+
+    if (!nextDisplayName) {
+      setProfileError("표시 이름을 입력해주세요")
+      setProfileStatus("")
+      return
+    }
+
+    if (!nextBio) {
+      setProfileError("소개글을 입력해주세요")
+      setProfileStatus("")
+      return
+    }
+
+    setIsProfileSaving(true)
+
+    try {
+      const ownerId = await findUsernameOwner(nextUsername)
+
+      if (ownerId && ownerId !== user.uid) {
+        setProfileError("이미 사용 중인 username입니다")
+        setProfileStatus("")
+        return
+      }
+
+      const nextProfile = {
+        userId: user.uid,
+        username: nextUsername,
+        displayName: nextDisplayName,
+        bio: nextBio,
+      }
+
+      await setDoc(
+        getProfileDoc(user.uid),
+        {
+          ...nextProfile,
+          updatedAt: serverTimestamp(),
+        },
+        { merge: true }
+      )
+
+      setProfile(nextProfile)
+      setUsername(nextUsername)
+      setDisplayName(nextDisplayName)
+      setBio(nextBio)
+      setProfileError("")
+      setProfileStatus("프로필이 저장되었습니다")
+    } catch {
+      setProfileError("프로필을 저장하지 못했습니다")
+      setProfileStatus("")
+    } finally {
+      setIsProfileSaving(false)
     }
   }
 
@@ -376,48 +575,65 @@ export default function MyPage() {
         </header>
 
         {user ? (
-          <Card className="rounded-[12px] border-[3px] border-black bg-white py-0 text-black shadow-[6px_6px_0_#000] ring-0">
-            <CardHeader className="px-5 pt-5">
-              <CardTitle className="text-2xl font-black">링크 추가</CardTitle>
-            </CardHeader>
-            <CardContent className="px-5 pb-5">
-              <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
-                <label className="flex flex-col gap-2 text-sm font-black">
-                  제목
-                  <Input
-                    value={title}
-                    onChange={(event) => setTitle(event.target.value)}
-                    placeholder="예: YouTube"
-                    className="h-12 rounded-[12px] border-[3px] border-black bg-[#FEF08A] px-4 text-base font-semibold text-black placeholder:text-black/50 focus-visible:ring-4 focus-visible:ring-[#A78BFA]"
-                  />
-                </label>
+          <>
+            <ProfileForm
+              bio={bio}
+              displayName={displayName}
+              isLoading={isProfileLoading}
+              isSaving={isProfileSaving}
+              profile={profile}
+              profileError={profileError}
+              profileStatus={profileStatus}
+              username={username}
+              onBioChange={setBio}
+              onDisplayNameChange={setDisplayName}
+              onSubmit={handleProfileSubmit}
+              onUsernameChange={setUsername}
+            />
 
-                <label className="flex flex-col gap-2 text-sm font-black">
-                  주소
-                  <Input
-                    value={url}
-                    onChange={(event) => setUrl(event.target.value)}
-                    placeholder="https://example.com"
-                    className="h-12 rounded-[12px] border-[3px] border-black bg-[#FEF08A] px-4 text-base font-semibold text-black placeholder:text-black/50 focus-visible:ring-4 focus-visible:ring-[#A78BFA]"
-                  />
-                </label>
+            <Card className="rounded-[12px] border-[3px] border-black bg-white py-0 text-black shadow-[6px_6px_0_#000] ring-0">
+              <CardHeader className="px-5 pt-5">
+                <CardTitle className="text-2xl font-black">링크 추가</CardTitle>
+              </CardHeader>
+              <CardContent className="px-5 pb-5">
+                <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
+                  <label className="flex flex-col gap-2 text-sm font-black">
+                    제목
+                    <Input
+                      value={title}
+                      onChange={(event) => setTitle(event.target.value)}
+                      placeholder="예: YouTube"
+                      className="h-12 rounded-[12px] border-[3px] border-black bg-[#FEF08A] px-4 text-base font-semibold text-black placeholder:text-black/50 focus-visible:ring-4 focus-visible:ring-[#A78BFA]"
+                    />
+                  </label>
 
-                {error ? (
-                  <p className="rounded-[12px] border-[3px] border-black bg-[#FF8FAB] px-4 py-3 text-sm font-black">
-                    {error}
-                  </p>
-                ) : null}
+                  <label className="flex flex-col gap-2 text-sm font-black">
+                    주소
+                    <Input
+                      value={url}
+                      onChange={(event) => setUrl(event.target.value)}
+                      placeholder="https://example.com"
+                      className="h-12 rounded-[12px] border-[3px] border-black bg-[#FEF08A] px-4 text-base font-semibold text-black placeholder:text-black/50 focus-visible:ring-4 focus-visible:ring-[#A78BFA]"
+                    />
+                  </label>
 
-                <Button
-                  type="submit"
-                  disabled={isSaving}
-                  className="h-12 rounded-[12px] border-[3px] border-black bg-[#5B5FC7] text-base font-black text-white shadow-[4px_4px_0_#000] hover:bg-[#4b4fb0] focus-visible:ring-4 focus-visible:ring-[#A78BFA]"
-                >
-                  {isSaving ? "저장 중..." : "추가하기"}
-                </Button>
-              </form>
-            </CardContent>
-          </Card>
+                  {error ? (
+                    <p className="rounded-[12px] border-[3px] border-black bg-[#FF8FAB] px-4 py-3 text-sm font-black">
+                      {error}
+                    </p>
+                  ) : null}
+
+                  <Button
+                    type="submit"
+                    disabled={isSaving}
+                    className="h-12 rounded-[12px] border-[3px] border-black bg-[#5B5FC7] text-base font-black text-white shadow-[4px_4px_0_#000] hover:bg-[#4b4fb0] focus-visible:ring-4 focus-visible:ring-[#A78BFA]"
+                  >
+                    {isSaving ? "저장 중..." : "추가하기"}
+                  </Button>
+                </form>
+              </CardContent>
+            </Card>
+          </>
         ) : (
           <Card className="rounded-[12px] border-[3px] border-black bg-white py-0 text-black shadow-[6px_6px_0_#000] ring-0">
             <CardHeader className="px-5 pt-5">
@@ -479,7 +695,7 @@ export default function MyPage() {
         </section>
 
         <Link
-          href="/"
+          href={profile ? `/${profile.username}` : "/"}
           className="self-center rounded-[12px] border-[3px] border-black bg-white px-4 py-2 text-sm font-black shadow-[4px_4px_0_#000]"
         >
           공개 페이지 보기
@@ -569,6 +785,121 @@ function AuthAction({
         로그아웃
       </Button>
     </div>
+  )
+}
+
+type ProfileFormProps = {
+  bio: string
+  displayName: string
+  isLoading: boolean
+  isSaving: boolean
+  profile: UserProfile | null
+  profileError: string
+  profileStatus: string
+  username: string
+  onBioChange: (value: string) => void
+  onDisplayNameChange: (value: string) => void
+  onSubmit: (event: FormEvent<HTMLFormElement>) => void
+  onUsernameChange: (value: string) => void
+}
+
+function ProfileForm({
+  bio,
+  displayName,
+  isLoading,
+  isSaving,
+  profile,
+  profileError,
+  profileStatus,
+  username,
+  onBioChange,
+  onDisplayNameChange,
+  onSubmit,
+  onUsernameChange,
+}: ProfileFormProps) {
+  const publicUsername = normalizeUsername(username)
+
+  return (
+    <Card className="rounded-[12px] border-[3px] border-black bg-white py-0 text-black shadow-[6px_6px_0_#000] ring-0">
+      <CardHeader className="px-5 pt-5">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <CardTitle className="text-2xl font-black">프로필 수정</CardTitle>
+            <CardDescription className="mt-2 break-all text-base font-semibold leading-7 text-black">
+              /{publicUsername || profile?.username || "username"}
+            </CardDescription>
+          </div>
+          {profile ? (
+            <Link
+              href={`/${profile.username}`}
+              className="rounded-[12px] border-[3px] border-black bg-[#FEF08A] px-4 py-2 text-sm font-black shadow-[4px_4px_0_#000]"
+            >
+              공개 페이지
+            </Link>
+          ) : null}
+        </div>
+      </CardHeader>
+      <CardContent className="px-5 pb-5">
+        {isLoading ? (
+          <p className="rounded-[12px] border-[3px] border-black bg-[#FEF08A] px-4 py-3 text-sm font-black">
+            프로필을 불러오는 중입니다
+          </p>
+        ) : (
+          <form className="flex flex-col gap-4" onSubmit={onSubmit}>
+            <label className="flex flex-col gap-2 text-sm font-black">
+              username
+              <Input
+                value={username}
+                onChange={(event) => onUsernameChange(event.target.value)}
+                placeholder="list.hyunseo"
+                className="h-12 rounded-[12px] border-[3px] border-black bg-[#FEF08A] px-4 text-base font-semibold text-black placeholder:text-black/50 focus-visible:ring-4 focus-visible:ring-[#A78BFA]"
+              />
+            </label>
+
+            <label className="flex flex-col gap-2 text-sm font-black">
+              표시 이름
+              <Input
+                value={displayName}
+                onChange={(event) => onDisplayNameChange(event.target.value)}
+                placeholder="최현서"
+                className="h-12 rounded-[12px] border-[3px] border-black bg-[#FEF08A] px-4 text-base font-semibold text-black placeholder:text-black/50 focus-visible:ring-4 focus-visible:ring-[#A78BFA]"
+              />
+            </label>
+
+            <label className="flex flex-col gap-2 text-sm font-black">
+              소개글
+              <textarea
+                value={bio}
+                onChange={(event) => onBioChange(event.target.value)}
+                placeholder="나를 소개하는 짧은 문장"
+                rows={3}
+                className="min-h-24 resize-y rounded-[12px] border-[3px] border-black bg-[#FEF08A] px-4 py-3 text-base font-semibold text-black placeholder:text-black/50 focus-visible:ring-4 focus-visible:ring-[#A78BFA] focus-visible:outline-none"
+              />
+            </label>
+
+            {profileError ? (
+              <p className="rounded-[12px] border-[3px] border-black bg-[#FF8FAB] px-4 py-3 text-sm font-black">
+                {profileError}
+              </p>
+            ) : null}
+
+            {profileStatus ? (
+              <p className="rounded-[12px] border-[3px] border-black bg-[#8DD3C7] px-4 py-3 text-sm font-black">
+                {profileStatus}
+              </p>
+            ) : null}
+
+            <Button
+              type="submit"
+              disabled={isSaving}
+              className="h-12 rounded-[12px] border-[3px] border-black bg-[#5B5FC7] text-base font-black text-white shadow-[4px_4px_0_#000] hover:bg-[#4b4fb0] focus-visible:ring-4 focus-visible:ring-[#A78BFA]"
+            >
+              {isSaving ? "저장 중..." : "프로필 저장"}
+            </Button>
+          </form>
+        )}
+      </CardContent>
+    </Card>
   )
 }
 
