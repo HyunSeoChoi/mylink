@@ -17,6 +17,12 @@ MyLink is a simple Linktree-style profile page built for the week 1-3 practice p
 - TypeScript
 - Tailwind CSS
 
+## Planning Docs
+
+- [PRD](docs/PRD.md)
+- [User Scenarios](docs/user-scenarios.md)
+- [Wireframe](docs/wireframe.md)
+
 ## Getting Started
 
 Install dependencies:
@@ -41,3 +47,4 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 - Push the project to the GitHub `mylink` repository
 - Make one small update, commit again, and push again
 - Apply responsive Neobrutalism styling to the profile page
+- Write the PRD, user scenarios, and wireframe docs
