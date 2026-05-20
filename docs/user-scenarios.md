@@ -120,3 +120,17 @@ Current version:
 3. The owner checks the statistics section.
 4. The page shows total clicks across all links.
 5. The page shows each link's click count sorted from highest to lowest.
+
+## Scenario 13: Visitor Opens the Landing Page
+
+1. A visitor opens `/`.
+2. The visitor sees the MyLink landing page.
+3. The visitor checks the feature summary and preview.
+4. The visitor clicks the start button to go to `/mypage`.
+
+## Scenario 14: Visitor Shares a Public Profile
+
+1. A visitor shares `/{username}` in a messenger or social app.
+2. The platform reads the page metadata.
+3. The shared preview shows a title, description, and OG image.
+4. The recipient can open the public profile page from the preview.

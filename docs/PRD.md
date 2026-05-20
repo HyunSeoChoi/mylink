@@ -5,7 +5,7 @@
 - Project name: MyLink
 - Purpose: Collect a personal profile and frequently used links on one shareable page.
 - Target users: Students, creators, job seekers, and anyone who wants to share several links from one profile URL.
-- Current goal: Build a polished public profile page with shareable usernames and Google-login-protected Firestore CRUD link management.
+- Current goal: Build a polished, deploy-ready MyLink service with shareable usernames, click statistics, and social preview metadata.
 
 ## Core Value
 
@@ -29,6 +29,8 @@ MyLink helps visitors quickly understand who the owner is and move to the owner'
 - Provide a public `/username` page that loads the matching profile and links.
 - Count public link clicks with safe server-side increments.
 - Show total clicks and link-by-link clicks in `/mypage`.
+- Provide a root landing page for first-time visitors.
+- Add SEO metadata, Open Graph metadata, dynamic OG images, and a sitemap.
 - Keep Firestore reads public, owner data writes limited to the logged-in owner, and public writes limited to `clickCount` increments.
 - Edit saved links with inline editing.
 - Delete saved links after a confirmation modal.
@@ -39,6 +41,7 @@ MyLink helps visitors quickly understand who the owner is and move to the owner'
 ### Later
 
 - Deploy the site with Vercel.
+- Submit the sitemap to search engines.
 
 ## Detailed Requirements
 

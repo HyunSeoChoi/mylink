@@ -15,6 +15,7 @@ MyLink is a simple Linktree-style profile page built for the week 1-3 practice p
 - Google login for owner-only link management
 - Editable profile data and shareable `/username` pages
 - Link click counting and owner statistics
+- Landing page, SEO metadata, dynamic OG images, and sitemap
 - Firestore rules for public reads and owner-only writes
 - Git and GitHub ready project structure
 
@@ -49,6 +50,12 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000) in your browser.
 
+## Deployment Notes
+
+- Add the Firebase `NEXT_PUBLIC_FIREBASE_*` variables in Vercel.
+- Add `NEXT_PUBLIC_SITE_URL` with the deployed Vercel URL.
+- After deployment, check `/sitemap.xml` and `/{username}/opengraph-image`.
+
 ## Practice Checklist
 
 - Create a Next.js project
@@ -65,3 +72,4 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 - Add Firebase Auth Google login and user-specific link storage
 - Add profile editing, `/username` public pages, and Firestore rules
 - Add click count tracking and a `/mypage` statistics section
+- Add landing page, SEO metadata, dynamic OG image, and sitemap
