@@ -48,27 +48,32 @@
 - On desktop, the whole page stays centered in a narrow card.
 - On mobile, the card uses most of the screen width.
 
-## Future Link Management Page
+## Link Management Page
 
 ```text
 ┌────────────────────────────────────┐
 │ MyLink Admin                       │
+│ 내 링크 관리                        │
 │                                    │
-│ [ + Add Link ]                     │
+│ Title                              │
+│ [ YouTube                      ]   │
+│                                    │
+│ URL                                │
+│ [ https://youtube.com          ]   │
+│                                    │
+│ [ 추가하기 ]                       │
+│                                    │
+│ 링크 목록                           │
 │                                    │
 │ ┌────────────────────────────────┐ │
 │ │ Instagram                      │ │
 │ │ https://instagram.com          │ │
-│ │ [Edit] [Delete]                │ │
 │ └────────────────────────────────┘ │
 │                                    │
 │ ┌────────────────────────────────┐ │
 │ │ Blog                           │ │
 │ │ https://velog.io               │ │
-│ │ [Edit] [Delete]                │ │
 │ └────────────────────────────────┘ │
-│                                    │
-│ [ Save Changes ]                   │
 └────────────────────────────────────┘
 ```
 

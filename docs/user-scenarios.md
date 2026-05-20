@@ -47,3 +47,14 @@ Future version:
 - Link data should eventually move out of hardcoded page code.
 - URL validation will be needed before saving user-entered links.
 - Authentication will be needed before personal link management.
+
+## Scenario 5: Owner Temporarily Adds a Link
+
+1. The owner opens `/mypage`.
+2. The owner types a link title and URL.
+3. The owner clicks the add button.
+4. If either field is empty, the page shows a clear validation message.
+5. If the URL is invalid, the page asks for a valid URL.
+6. If validation passes, the new link appears in the list.
+7. The input fields are cleared.
+8. If the page is refreshed, the added link disappears because Firebase storage is not connected yet.

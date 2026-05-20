@@ -18,15 +18,17 @@ MyLink helps visitors quickly understand who the owner is and move to the owner'
 - Show a profile section with name, short introduction, and profile image area.
 - Show a vertical list of links.
 - Render the link list from dummy link data.
+- Provide a `/mypage` management page for temporarily adding links.
+- Validate empty title, empty URL, and invalid URL input before adding links.
 - Open each link in a new browser tab.
 - Keep the layout readable on mobile, tablet, and desktop screens.
 - Keep the project version controlled with Git and pushed to GitHub.
 
 ### Next
 
-- Add link create, read, update, and delete behavior.
-- Validate link title and URL input.
 - Save link data instead of hardcoding it in the page.
+- Persist newly added links after refresh.
+- Add link update and delete behavior.
 
 ### Later
 

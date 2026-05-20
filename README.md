@@ -9,6 +9,7 @@ MyLink is a simple Linktree-style profile page built for the week 1-3 practice p
 - Responsive layout for mobile and desktop screens
 - Neobrutalism profile styling with bold borders and hard shadows
 - Data-driven link list built from dummy link data
+- Temporary link creation page at `/mypage`
 - Git and GitHub ready project structure
 
 ## Tech Stack
@@ -51,3 +52,4 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 - Apply responsive Neobrutalism styling to the profile page
 - Write the PRD, user scenarios, and wireframe docs
 - Install shadcn/ui and build a data-driven link list UI
+- Build `/mypage` link creation with form validation
