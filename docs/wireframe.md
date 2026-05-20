@@ -52,7 +52,7 @@
 
 ```text
 users
-└── anonymous
+└── {userId}
     └── links
         └── {linkId}
             ├── title
@@ -70,6 +70,7 @@ users
 ┌────────────────────────────────────┐
 │ MyLink Admin                       │
 │ 내 링크 관리                        │
+│ [ Google 로그인 / 로그아웃 ]        │
 │                                    │
 │ Title                              │
 │ [ YouTube                      ]   │

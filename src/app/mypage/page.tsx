@@ -3,6 +3,12 @@
 import Link from "next/link"
 import { FormEvent, useEffect, useState } from "react"
 import {
+  onAuthStateChanged,
+  signInWithPopup,
+  signOut,
+  type User,
+} from "firebase/auth"
+import {
   addDoc,
   collection,
   deleteDoc,
@@ -27,10 +33,9 @@ import {
 } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { links as initialLinks, type LinkItem } from "@/data/links"
-import { db } from "@/lib/firebase"
+import { auth, db, googleProvider } from "@/lib/firebase"
 
 const linkColors = ["bg-[#FF8FAB]", "bg-[#8DD3C7]", "bg-[#A78BFA]", "bg-white"]
-const linksCollection = collection(db, "users", "anonymous", "links")
 
 type FirestoreLink = {
   title?: string
@@ -81,7 +86,14 @@ function getErrorMessage(title: string, url: string) {
   return ""
 }
 
+function getLinksCollection(userId: string) {
+  return collection(db, "users", userId, "links")
+}
+
 export default function MyPage() {
+  const [user, setUser] = useState<User | null>(null)
+  const [isAuthReady, setIsAuthReady] = useState(false)
+  const [isSigningIn, setIsSigningIn] = useState(false)
   const [links, setLinks] = useState<LinkItem[]>([])
   const [title, setTitle] = useState("")
   const [url, setUrl] = useState("")
@@ -96,16 +108,45 @@ export default function MyPage() {
   const [isUpdating, setIsUpdating] = useState(false)
 
   useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (nextUser) => {
+      setUser(nextUser)
+      setIsAuthReady(true)
+
+      if (!nextUser) {
+        setLinks([])
+        setIsLoading(false)
+      }
+    })
+
+    return unsubscribe
+  }, [])
+
+  useEffect(() => {
+    if (!isAuthReady) {
+      return
+    }
+
+    if (!user) {
+      return
+    }
+
     async function loadLinks() {
+      if (!user) {
+        return
+      }
+
+      const userLinksCollection = getLinksCollection(user.uid)
+
       try {
+        setIsLoading(true)
         const snapshot = await getDocs(
-          query(linksCollection, orderBy("createdAt", "asc"))
+          query(userLinksCollection, orderBy("createdAt", "asc"))
         )
 
         if (snapshot.empty) {
           await Promise.all(
             initialLinks.map((link) =>
-              setDoc(doc(db, "users", "anonymous", "links", `default-${link.id}`), {
+              setDoc(doc(db, "users", user.uid, "links", `default-${link.id}`), {
                 title: link.title,
                 description: link.description,
                 url: link.url,
@@ -118,7 +159,7 @@ export default function MyPage() {
           )
 
           const seededSnapshot = await getDocs(
-            query(linksCollection, orderBy("createdAt", "asc"))
+            query(userLinksCollection, orderBy("createdAt", "asc"))
           )
 
           setLinks(seededSnapshot.docs.map(toLinkItem))
@@ -136,10 +177,38 @@ export default function MyPage() {
     }
 
     loadLinks()
-  }, [])
+  }, [isAuthReady, user])
+
+  async function handleSignIn() {
+    setIsSigningIn(true)
+
+    try {
+      await signInWithPopup(auth, googleProvider)
+      setError("")
+    } catch {
+      setError("Google 로그인에 실패했습니다")
+    } finally {
+      setIsSigningIn(false)
+    }
+  }
+
+  async function handleSignOut() {
+    try {
+      await signOut(auth)
+      setLinks([])
+      setError("")
+    } catch {
+      setError("로그아웃에 실패했습니다")
+    }
+  }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
+
+    if (!user) {
+      setError("로그인이 필요합니다")
+      return
+    }
 
     const trimmedTitle = title.trim()
     const trimmedUrl = url.trim()
@@ -164,7 +233,7 @@ export default function MyPage() {
     }
 
     try {
-      const docRef = await addDoc(linksCollection, {
+      const docRef = await addDoc(getLinksCollection(user.uid), {
         title: nextLink.title,
         description: nextLink.description,
         url: nextLink.url,
@@ -206,6 +275,11 @@ export default function MyPage() {
   }
 
   async function handleUpdate(link: LinkItem) {
+    if (!user) {
+      setError("로그인이 필요합니다")
+      return
+    }
+
     const trimmedTitle = editTitle.trim()
     const trimmedUrl = editUrl.trim()
     const validationError = getErrorMessage(trimmedTitle, trimmedUrl)
@@ -227,7 +301,7 @@ export default function MyPage() {
     setIsUpdating(true)
 
     try {
-      await updateDoc(doc(db, "users", "anonymous", "links", String(link.id)), {
+      await updateDoc(doc(db, "users", user.uid, "links", String(link.id)), {
         title: nextLink.title,
         description: nextLink.description,
         url: nextLink.url,
@@ -253,11 +327,16 @@ export default function MyPage() {
       return
     }
 
+    if (!user) {
+      setError("로그인이 필요합니다")
+      return
+    }
+
     setIsDeleting(true)
 
     try {
       await deleteDoc(
-        doc(db, "users", "anonymous", "links", String(deleteTarget.id))
+        doc(db, "users", user.uid, "links", String(deleteTarget.id))
       )
       setLinks((currentLinks) =>
         currentLinks.filter((link) => link.id !== deleteTarget.id)
@@ -275,58 +354,97 @@ export default function MyPage() {
     <main className="min-h-screen bg-[#7dd3fc] px-4 py-6 text-black sm:px-6">
       <section className="mx-auto flex w-full max-w-2xl flex-col gap-5">
         <header className="rounded-[12px] border-[3px] border-black bg-[#FEF08A] p-5 shadow-[6px_6px_0_#000]">
-          <p className="text-sm font-black uppercase tracking-[0.18em]">
-            MyLink Admin
-          </p>
-          <h1 className="mt-2 text-4xl font-black">내 링크 관리</h1>
-          <p className="mt-3 text-base font-semibold leading-7">
-            Firestore에 저장된 링크를 추가, 수정, 삭제합니다. 새로고침해도
-            변경사항이 유지됩니다.
-          </p>
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <p className="text-sm font-black uppercase tracking-[0.18em]">
+                MyLink Admin
+              </p>
+              <h1 className="mt-2 text-4xl font-black">내 링크 관리</h1>
+              <p className="mt-3 text-base font-semibold leading-7">
+                Google 계정으로 로그인한 뒤 내 링크를 추가, 수정, 삭제합니다.
+              </p>
+            </div>
+
+            <AuthAction
+              isAuthReady={isAuthReady}
+              isSigningIn={isSigningIn}
+              user={user}
+              onSignIn={handleSignIn}
+              onSignOut={handleSignOut}
+            />
+          </div>
         </header>
 
-        <Card className="rounded-[12px] border-[3px] border-black bg-white py-0 text-black shadow-[6px_6px_0_#000] ring-0">
-          <CardHeader className="px-5 pt-5">
-            <CardTitle className="text-2xl font-black">링크 추가</CardTitle>
-          </CardHeader>
-          <CardContent className="px-5 pb-5">
-            <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
-              <label className="flex flex-col gap-2 text-sm font-black">
-                제목
-                <Input
-                  value={title}
-                  onChange={(event) => setTitle(event.target.value)}
-                  placeholder="예: YouTube"
-                  className="h-12 rounded-[12px] border-[3px] border-black bg-[#FEF08A] px-4 text-base font-semibold text-black placeholder:text-black/50 focus-visible:ring-4 focus-visible:ring-[#A78BFA]"
-                />
-              </label>
+        {user ? (
+          <Card className="rounded-[12px] border-[3px] border-black bg-white py-0 text-black shadow-[6px_6px_0_#000] ring-0">
+            <CardHeader className="px-5 pt-5">
+              <CardTitle className="text-2xl font-black">링크 추가</CardTitle>
+            </CardHeader>
+            <CardContent className="px-5 pb-5">
+              <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
+                <label className="flex flex-col gap-2 text-sm font-black">
+                  제목
+                  <Input
+                    value={title}
+                    onChange={(event) => setTitle(event.target.value)}
+                    placeholder="예: YouTube"
+                    className="h-12 rounded-[12px] border-[3px] border-black bg-[#FEF08A] px-4 text-base font-semibold text-black placeholder:text-black/50 focus-visible:ring-4 focus-visible:ring-[#A78BFA]"
+                  />
+                </label>
 
-              <label className="flex flex-col gap-2 text-sm font-black">
-                주소
-                <Input
-                  value={url}
-                  onChange={(event) => setUrl(event.target.value)}
-                  placeholder="https://example.com"
-                  className="h-12 rounded-[12px] border-[3px] border-black bg-[#FEF08A] px-4 text-base font-semibold text-black placeholder:text-black/50 focus-visible:ring-4 focus-visible:ring-[#A78BFA]"
-                />
-              </label>
+                <label className="flex flex-col gap-2 text-sm font-black">
+                  주소
+                  <Input
+                    value={url}
+                    onChange={(event) => setUrl(event.target.value)}
+                    placeholder="https://example.com"
+                    className="h-12 rounded-[12px] border-[3px] border-black bg-[#FEF08A] px-4 text-base font-semibold text-black placeholder:text-black/50 focus-visible:ring-4 focus-visible:ring-[#A78BFA]"
+                  />
+                </label>
 
+                {error ? (
+                  <p className="rounded-[12px] border-[3px] border-black bg-[#FF8FAB] px-4 py-3 text-sm font-black">
+                    {error}
+                  </p>
+                ) : null}
+
+                <Button
+                  type="submit"
+                  disabled={isSaving}
+                  className="h-12 rounded-[12px] border-[3px] border-black bg-[#5B5FC7] text-base font-black text-white shadow-[4px_4px_0_#000] hover:bg-[#4b4fb0] focus-visible:ring-4 focus-visible:ring-[#A78BFA]"
+                >
+                  {isSaving ? "저장 중..." : "추가하기"}
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
+        ) : (
+          <Card className="rounded-[12px] border-[3px] border-black bg-white py-0 text-black shadow-[6px_6px_0_#000] ring-0">
+            <CardHeader className="px-5 pt-5">
+              <CardTitle className="text-2xl font-black">
+                로그인이 필요합니다
+              </CardTitle>
+              <CardDescription className="text-base font-semibold leading-7 text-black">
+                링크 관리는 Google 로그인 후 사용할 수 있습니다.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="px-5 pb-5">
               {error ? (
                 <p className="rounded-[12px] border-[3px] border-black bg-[#FF8FAB] px-4 py-3 text-sm font-black">
                   {error}
                 </p>
               ) : null}
-
               <Button
-                type="submit"
-                disabled={isSaving}
-                className="h-12 rounded-[12px] border-[3px] border-black bg-[#5B5FC7] text-base font-black text-white shadow-[4px_4px_0_#000] hover:bg-[#4b4fb0] focus-visible:ring-4 focus-visible:ring-[#A78BFA]"
+                type="button"
+                disabled={!isAuthReady || isSigningIn}
+                className="mt-4 h-12 w-full rounded-[12px] border-[3px] border-black bg-[#5B5FC7] text-base font-black text-white shadow-[4px_4px_0_#000] hover:bg-[#4b4fb0]"
+                onClick={handleSignIn}
               >
-                {isSaving ? "저장 중..." : "추가하기"}
+                {isSigningIn ? "로그인 중..." : "Google로 로그인"}
               </Button>
-            </form>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        )}
 
         <section className="rounded-[12px] border-[3px] border-black bg-[#FEF08A] p-4 shadow-[6px_6px_0_#000] sm:p-6">
           <div className="flex items-center justify-between gap-3">
@@ -335,7 +453,11 @@ export default function MyPage() {
               {links.length}개
             </span>
           </div>
-          {isLoading ? (
+          {!user ? (
+            <p className="mt-7 rounded-[12px] border-[3px] border-black bg-white px-4 py-3 text-sm font-black shadow-[4px_4px_0_#000]">
+              로그인하면 내 저장 링크가 표시됩니다
+            </p>
+          ) : isLoading ? (
             <p className="mt-7 rounded-[12px] border-[3px] border-black bg-white px-4 py-3 text-sm font-black shadow-[4px_4px_0_#000]">
               저장된 링크를 불러오는 중입니다
             </p>
@@ -395,6 +517,58 @@ export default function MyPage() {
         </div>
       ) : null}
     </main>
+  )
+}
+
+type AuthActionProps = {
+  isAuthReady: boolean
+  isSigningIn: boolean
+  user: User | null
+  onSignIn: () => void
+  onSignOut: () => void
+}
+
+function AuthAction({
+  isAuthReady,
+  isSigningIn,
+  user,
+  onSignIn,
+  onSignOut,
+}: AuthActionProps) {
+  if (!isAuthReady) {
+    return (
+      <span className="rounded-[12px] border-[3px] border-black bg-white px-4 py-3 text-sm font-black shadow-[4px_4px_0_#000]">
+        확인 중...
+      </span>
+    )
+  }
+
+  if (!user) {
+    return (
+      <Button
+        type="button"
+        disabled={isSigningIn}
+        className="h-11 rounded-[12px] border-[3px] border-black bg-[#5B5FC7] px-4 text-sm font-black text-white shadow-[4px_4px_0_#000] hover:bg-[#4b4fb0]"
+        onClick={onSignIn}
+      >
+        {isSigningIn ? "로그인 중..." : "Google 로그인"}
+      </Button>
+    )
+  }
+
+  return (
+    <div className="flex flex-col items-start gap-2 sm:items-end">
+      <p className="max-w-full break-all rounded-[12px] border-[3px] border-black bg-white px-4 py-2 text-sm font-black shadow-[4px_4px_0_#000]">
+        {user.displayName ?? user.email ?? "로그인됨"}
+      </p>
+      <Button
+        type="button"
+        className="h-10 rounded-[12px] border-[3px] border-black bg-white px-4 text-sm font-black text-black shadow-[4px_4px_0_#000] hover:bg-[#FEF08A]"
+        onClick={onSignOut}
+      >
+        로그아웃
+      </Button>
+    </div>
   )
 }
 

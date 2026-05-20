@@ -43,36 +43,46 @@ Future version:
 
 ## Missing Features Found From Scenarios
 
-- Authentication will be needed before personal link management.
+- Public profile publishing from each user's saved Firestore links will be needed later.
 
 ## Scenario 5: Owner Adds a Link With Firestore
 
 1. The owner opens `/mypage`.
-2. The owner types a link title and URL.
-3. The owner clicks the add button.
-4. If either field is empty, the page shows a clear validation message.
-5. If the URL is invalid, the page asks for a valid URL.
-6. If validation passes, the new link is saved to Firestore.
-7. The input fields are cleared.
-8. The new link appears in the list.
-9. If the page is refreshed, the saved link is loaded again from Firestore.
+2. The owner logs in with Google.
+3. The owner types a link title and URL.
+4. The owner clicks the add button.
+5. If either field is empty, the page shows a clear validation message.
+6. If the URL is invalid, the page asks for a valid URL.
+7. If validation passes, the new link is saved to the owner's Firestore path.
+8. The input fields are cleared.
+9. The new link appears in the list.
+10. If the page is refreshed, the saved link is loaded again from Firestore.
 
 ## Scenario 6: Owner Edits a Link
 
 1. The owner opens `/mypage`.
-2. The owner clicks the edit button on a link.
-3. The link title and URL turn into input fields.
-4. The owner changes the values.
-5. If validation passes, Firestore is updated.
-6. The link list shows the updated values.
-7. If the page is refreshed, the edited values remain.
+2. The owner logs in with Google.
+3. The owner clicks the edit button on a link.
+4. The link title and URL turn into input fields.
+5. The owner changes the values.
+6. If validation passes, Firestore is updated.
+7. The link list shows the updated values.
+8. If the page is refreshed, the edited values remain.
 
 ## Scenario 7: Owner Deletes a Link
 
 1. The owner opens `/mypage`.
-2. The owner clicks the delete button on a link.
-3. A confirmation modal shows the link title and warning message.
-4. The owner can cancel to keep the link.
-5. If the owner clicks delete, Firestore removes the link document.
-6. The link disappears from the list.
-7. If the page is refreshed, the deleted link stays removed.
+2. The owner logs in with Google.
+3. The owner clicks the delete button on a link.
+4. A confirmation modal shows the link title and warning message.
+5. The owner can cancel to keep the link.
+6. If the owner clicks delete, Firestore removes the link document.
+7. The link disappears from the list.
+8. If the page is refreshed, the deleted link stays removed.
+
+## Scenario 8: Owner Logs Out
+
+1. The owner opens `/mypage`.
+2. The owner clicks the logout button.
+3. The management form is hidden.
+4. The page asks for Google login before links can be managed again.
