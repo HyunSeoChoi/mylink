@@ -40,8 +40,11 @@ MyLink helps visitors quickly understand who the owner is and move to the owner'
 
 ### Later
 
-- Deploy the site with Vercel.
 - Submit the sitemap to search engines.
+- Add drag-and-drop link ordering.
+- Add custom profile image upload.
+- Add daily click statistics charts.
+- Add dark mode and custom themes.
 
 ## Detailed Requirements
 
