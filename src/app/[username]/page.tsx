@@ -8,8 +8,10 @@ import {
   doc,
   getDoc,
   getDocs,
+  increment,
   orderBy,
   query,
+  updateDoc,
 } from "firebase/firestore"
 
 import { LinkList } from "@/components/link-list"
@@ -23,6 +25,7 @@ type FirestoreLink = {
   description?: string
   icon?: string
   color?: string
+  clickCount?: number
 }
 
 export default function PublicProfilePage() {
@@ -39,6 +42,29 @@ export default function PublicProfilePage() {
   const [links, setLinks] = useState<LinkItem[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isNotFound, setIsNotFound] = useState(false)
+
+  function handleLinkClick(link: LinkItem) {
+    if (!profile) {
+      return
+    }
+
+    setLinks((currentLinks) =>
+      currentLinks.map((currentLink) =>
+        currentLink.id === link.id
+          ? {
+              ...currentLink,
+              clickCount: (currentLink.clickCount ?? 0) + 1,
+            }
+          : currentLink
+      )
+    )
+
+    updateDoc(doc(db, "users", profile.userId, "links", String(link.id)), {
+      clickCount: increment(1),
+    }).catch((error) => {
+      console.error("Failed to record link click", error)
+    })
+  }
 
   useEffect(() => {
     async function loadPublicProfile() {
@@ -152,7 +178,7 @@ export default function PublicProfilePage() {
           </header>
 
           {links.length ? (
-            <LinkList links={links} />
+            <LinkList links={links} onLinkClick={handleLinkClick} />
           ) : (
             <p className="mt-7 rounded-[12px] border-[3px] border-black bg-white px-4 py-3 text-center text-sm font-black shadow-[4px_4px_0_#000]">
               아직 등록된 링크가 없습니다
@@ -190,6 +216,10 @@ function toLinkItem(docSnapshot: { id: string; data: () => FirestoreLink }) {
     url: data.url ?? "#",
     icon: data.icon ?? "LK",
     color: data.color ?? "bg-white",
+    clickCount:
+      typeof data.clickCount === "number" && Number.isFinite(data.clickCount)
+        ? data.clickCount
+        : 0,
   }
 }
 

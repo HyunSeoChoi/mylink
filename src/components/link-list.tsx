@@ -1,3 +1,5 @@
+"use client"
+
 import {
   Card,
   CardAction,
@@ -11,9 +13,10 @@ import type { LinkItem } from "@/data/links"
 
 type LinkListProps = {
   links: LinkItem[]
+  onLinkClick?: (link: LinkItem) => void
 }
 
-export function LinkList({ links }: LinkListProps) {
+export function LinkList({ links, onLinkClick }: LinkListProps) {
   return (
     <nav aria-label="profile links" className="mt-7 flex flex-col gap-3">
       {links.map((link) => (
@@ -22,6 +25,7 @@ export function LinkList({ links }: LinkListProps) {
           href={link.url}
           target="_blank"
           rel="noreferrer"
+          onClick={() => onLinkClick?.(link)}
           className="group block focus:outline-none focus-visible:ring-4 focus-visible:ring-white"
         >
           <Card

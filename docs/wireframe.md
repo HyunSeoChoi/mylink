@@ -67,6 +67,7 @@ users
             ├── url
             ├── icon
             ├── color
+            ├── clickCount
             ├── createdAt
             └── updatedAt
 
@@ -112,6 +113,11 @@ usernames
 │ │ https://velog.io               │ │
 │ │ [수정] [삭제]                  │ │
 │ └────────────────────────────────┘ │
+│                                    │
+│ 클릭 통계                           │
+│ 총 234 클릭                         │
+│ Instagram           123 클릭        │
+│ YouTube              67 클릭        │
 └────────────────────────────────────┘
 ```
 

@@ -27,7 +27,9 @@ MyLink helps visitors quickly understand who the owner is and move to the owner'
 - Store username ownership in `usernames/{username}`.
 - Let the owner edit username, display name, and bio.
 - Provide a public `/username` page that loads the matching profile and links.
-- Keep Firestore reads public and writes limited to the logged-in owner.
+- Count public link clicks with safe server-side increments.
+- Show total clicks and link-by-link clicks in `/mypage`.
+- Keep Firestore reads public, owner data writes limited to the logged-in owner, and public writes limited to `clickCount` increments.
 - Edit saved links with inline editing.
 - Delete saved links after a confirmation modal.
 - Open each link in a new browser tab.
@@ -37,7 +39,6 @@ MyLink helps visitors quickly understand who the owner is and move to the owner'
 ### Later
 
 - Deploy the site with Vercel.
-- Count link clicks.
 
 ## Detailed Requirements
 

@@ -51,6 +51,7 @@ type FirestoreLink = {
   icon?: string
   color?: string
   createdAt?: Timestamp
+  clickCount?: number
 }
 
 function getIcon(title: string) {
@@ -281,6 +282,7 @@ export default function MyPage() {
                 url: link.url,
                 icon: link.icon,
                 color: link.color,
+                clickCount: 0,
                 createdAt: serverTimestamp(),
                 updatedAt: serverTimestamp(),
               })
@@ -488,6 +490,7 @@ export default function MyPage() {
         url: nextLink.url,
         icon: nextLink.icon,
         color: nextLink.color,
+        clickCount: 0,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       })
@@ -744,6 +747,10 @@ export default function MyPage() {
           )}
         </section>
 
+        {user ? (
+          <StatsSection isLoading={isLoading} links={links} />
+        ) : null}
+
         <Link
           href={profile ? `/${profile.username}` : "/"}
           className="self-center rounded-[12px] border-[3px] border-black bg-white px-4 py-2 text-sm font-black shadow-[4px_4px_0_#000]"
@@ -972,7 +979,86 @@ function toLinkItem(docSnapshot: { id: string; data: () => FirestoreLink }) {
     url: data.url ?? "#",
     icon: data.icon ?? "LK",
     color: data.color ?? "bg-white",
+    clickCount:
+      typeof data.clickCount === "number" && Number.isFinite(data.clickCount)
+        ? data.clickCount
+        : 0,
   }
+}
+
+type StatsSectionProps = {
+  isLoading: boolean
+  links: LinkItem[]
+}
+
+function StatsSection({ isLoading, links }: StatsSectionProps) {
+  const sortedLinks = [...links].sort(
+    (firstLink, secondLink) =>
+      (secondLink.clickCount ?? 0) - (firstLink.clickCount ?? 0)
+  )
+  const totalClicks = links.reduce(
+    (sum, link) => sum + (link.clickCount ?? 0),
+    0
+  )
+  const maxClicks = Math.max(
+    ...links.map((link) => link.clickCount ?? 0),
+    1
+  )
+
+  return (
+    <section className="rounded-[12px] border-[3px] border-black bg-white p-4 text-black shadow-[6px_6px_0_#000] sm:p-6">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <p className="text-sm font-black uppercase tracking-[0.18em]">
+            Stats
+          </p>
+          <h2 className="mt-1 text-2xl font-black">클릭 통계</h2>
+        </div>
+        <p className="rounded-[12px] border-[3px] border-black bg-[#FEF08A] px-4 py-3 text-3xl font-black shadow-[4px_4px_0_#000]">
+          총 {totalClicks} 클릭
+        </p>
+      </div>
+
+      {isLoading ? (
+        <p className="mt-6 rounded-[12px] border-[3px] border-black bg-[#FEF08A] px-4 py-3 text-sm font-black">
+          통계를 불러오는 중입니다
+        </p>
+      ) : sortedLinks.length ? (
+        <div className="mt-6 flex flex-col gap-3">
+          {sortedLinks.map((link) => {
+            const clickCount = link.clickCount ?? 0
+            const width = `${Math.max((clickCount / maxClicks) * 100, 4)}%`
+
+            return (
+              <div
+                key={link.id}
+                className="rounded-[12px] border-[3px] border-black bg-[#FEF08A] p-4 shadow-[4px_4px_0_#000]"
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <p className="min-w-0 break-words text-base font-black">
+                    {link.title}
+                  </p>
+                  <span className="shrink-0 rounded-full border-[3px] border-black bg-white px-3 py-1 text-sm font-black">
+                    {clickCount} 클릭
+                  </span>
+                </div>
+                <div className="mt-3 h-4 overflow-hidden rounded-full border-[3px] border-black bg-white">
+                  <div
+                    className="h-full bg-[#5B5FC7]"
+                    style={{ width }}
+                  />
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      ) : (
+        <p className="mt-6 rounded-[12px] border-[3px] border-black bg-[#FEF08A] px-4 py-3 text-sm font-black">
+          아직 통계를 볼 링크가 없습니다
+        </p>
+      )}
+    </section>
+  )
 }
 
 type ManageLinkListProps = {

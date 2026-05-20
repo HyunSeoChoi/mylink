@@ -104,3 +104,19 @@ Current version:
 3. The app loads that user's link list.
 4. The visitor sees the profile name, bio, and links.
 5. If the username does not exist, the page shows a 404-style message.
+
+## Scenario 11: Visitor Clicks a Public Link
+
+1. A visitor opens `/{username}`.
+2. The visitor clicks a link.
+3. The link opens in a new browser tab.
+4. The app increments that link's `clickCount` in Firestore.
+5. Multiple visitors clicking at the same time are counted safely.
+
+## Scenario 12: Owner Checks Link Statistics
+
+1. The owner opens `/mypage`.
+2. The owner logs in with Google.
+3. The owner checks the statistics section.
+4. The page shows total clicks across all links.
+5. The page shows each link's click count sorted from highest to lowest.

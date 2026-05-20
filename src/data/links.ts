@@ -5,6 +5,7 @@ export type LinkItem = {
   url: string
   icon: string
   color: string
+  clickCount?: number
 }
 
 export const links: LinkItem[] = [
