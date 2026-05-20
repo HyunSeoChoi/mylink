@@ -317,8 +317,14 @@ export default function MyPage() {
     try {
       await signInWithPopup(auth, googleProvider)
       setError("")
-    } catch {
-      setError("Google 로그인에 실패했습니다")
+    } catch (error) {
+      const code = getFirebaseErrorCode(error)
+
+      setError(
+        code === "auth/unauthorized-domain"
+          ? "Firebase Auth에 현재 도메인을 Authorized domain으로 추가해주세요"
+          : "Google 로그인에 실패했습니다"
+      )
     } finally {
       setIsSigningIn(false)
     }
