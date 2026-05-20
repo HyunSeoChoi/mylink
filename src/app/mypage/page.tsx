@@ -363,7 +363,21 @@ export default function MyPage() {
     setIsProfileSaving(true)
 
     try {
-      const ownerId = await findUsernameOwner(nextUsername)
+      let ownerId: string | null = null
+
+      try {
+        ownerId = await findUsernameOwner(nextUsername)
+      } catch (error) {
+        const code = getFirebaseErrorCode(error)
+
+        setProfileError(
+          code === "permission-denied"
+            ? "username 중복 체크가 Firestore Rules 때문에 막혔습니다"
+            : "username 중복 체크에 실패했습니다"
+        )
+        setProfileStatus("")
+        return
+      }
 
       if (ownerId && ownerId !== user.uid) {
         setProfileError("이미 사용 중인 username입니다")
@@ -378,14 +392,26 @@ export default function MyPage() {
         bio: nextBio,
       }
 
-      await setDoc(
-        getProfileDoc(user.uid),
-        {
-          ...nextProfile,
-          updatedAt: serverTimestamp(),
-        },
-        { merge: true }
-      )
+      try {
+        await setDoc(
+          getProfileDoc(user.uid),
+          {
+            ...nextProfile,
+            updatedAt: serverTimestamp(),
+          },
+          { merge: true }
+        )
+      } catch (error) {
+        const code = getFirebaseErrorCode(error)
+
+        setProfileError(
+          code === "permission-denied"
+            ? `프로필 저장 권한이 막혔습니다. 로그인 UID: ${user.uid}`
+            : "프로필을 저장하지 못했습니다"
+        )
+        setProfileStatus("")
+        return
+      }
 
       setProfile(nextProfile)
       setUsername(nextUsername)
@@ -393,20 +419,8 @@ export default function MyPage() {
       setBio(nextBio)
       setProfileError("")
       setProfileStatus("프로필이 저장되었습니다")
-    } catch (error) {
-      const code =
-        typeof error === "object" &&
-        error !== null &&
-        "code" in error &&
-        typeof error.code === "string"
-          ? error.code
-          : ""
-
-      setProfileError(
-        code === "permission-denied"
-          ? "Firestore Rules 권한 때문에 프로필을 저장하지 못했습니다"
-          : "프로필을 저장하지 못했습니다"
-      )
+    } catch {
+      setProfileError("프로필을 저장하지 못했습니다")
       setProfileStatus("")
     } finally {
       setIsProfileSaving(false)
@@ -746,6 +760,15 @@ export default function MyPage() {
       ) : null}
     </main>
   )
+}
+
+function getFirebaseErrorCode(error: unknown) {
+  return typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    typeof error.code === "string"
+    ? error.code
+    : ""
 }
 
 type AuthActionProps = {
