@@ -8,6 +8,7 @@ MyLink is a simple Linktree-style profile page built for the week 1-3 practice p
 - Link buttons for Instagram, Blog, and Portfolio
 - Responsive layout for mobile and desktop screens
 - Neobrutalism profile styling with bold borders and hard shadows
+- Data-driven link list built from dummy link data
 - Git and GitHub ready project structure
 
 ## Tech Stack
@@ -16,6 +17,7 @@ MyLink is a simple Linktree-style profile page built for the week 1-3 practice p
 - React
 - TypeScript
 - Tailwind CSS
+- shadcn/ui
 
 ## Planning Docs
 
@@ -48,3 +50,4 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 - Make one small update, commit again, and push again
 - Apply responsive Neobrutalism styling to the profile page
 - Write the PRD, user scenarios, and wireframe docs
+- Install shadcn/ui and build a data-driven link list UI

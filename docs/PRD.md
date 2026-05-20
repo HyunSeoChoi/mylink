@@ -5,7 +5,7 @@
 - Project name: MyLink
 - Purpose: Collect a personal profile and frequently used links on one shareable page.
 - Target users: Students, creators, job seekers, and anyone who wants to share several links from one profile URL.
-- Current goal: Build a polished public profile page first, then expand into link management.
+- Current goal: Build a polished public profile page with a data-driven link list, then expand into link management.
 
 ## Core Value
 
@@ -17,13 +17,13 @@ MyLink helps visitors quickly understand who the owner is and move to the owner'
 
 - Show a profile section with name, short introduction, and profile image area.
 - Show a vertical list of links.
+- Render the link list from dummy link data.
 - Open each link in a new browser tab.
 - Keep the layout readable on mobile, tablet, and desktop screens.
 - Keep the project version controlled with Git and pushed to GitHub.
 
 ### Next
 
-- Add a link list UI for easier management.
 - Add link create, read, update, and delete behavior.
 - Validate link title and URL input.
 - Save link data instead of hardcoding it in the page.

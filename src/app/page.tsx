@@ -1,29 +1,5 @@
-const links = [
-  {
-    title: "Instagram",
-    description: "Daily photos and campus moments",
-    href: "https://instagram.com",
-    color: "bg-[#FF8FAB]",
-  },
-  {
-    title: "Blog",
-    description: "Notes about study, projects, and ideas",
-    href: "https://velog.io",
-    color: "bg-[#8DD3C7]",
-  },
-  {
-    title: "Portfolio",
-    description: "Projects, experiments, and contact info",
-    href: "https://github.com/HyunSeoChoi",
-    color: "bg-[#A78BFA]",
-  },
-  {
-    title: "GitHub Repository",
-    description: "Source code for this MyLink practice project",
-    href: "https://github.com/HyunSeoChoi/mylink",
-    color: "bg-white",
-  },
-];
+import { LinkList } from "@/components/link-list"
+import { links } from "@/data/links"
 
 export default function Home() {
   return (
@@ -46,32 +22,7 @@ export default function Home() {
             </p>
           </header>
 
-          <nav aria-label="profile links" className="mt-7 flex flex-col gap-3">
-            {links.map((link) => (
-              <a
-                key={link.title}
-                href={link.href}
-                target="_blank"
-                rel="noreferrer"
-                className={`group flex min-h-20 items-center justify-between rounded-[12px] border-[3px] border-black px-4 py-3 shadow-[4px_4px_0_#000] transition hover:-translate-y-0.5 hover:shadow-[6px_6px_0_#000] focus:outline-none focus:ring-4 focus:ring-white ${link.color}`}
-              >
-                <span className="text-left">
-                  <span className="block text-lg font-black">
-                    {link.title}
-                  </span>
-                  <span className="mt-1 block text-sm font-semibold leading-6">
-                    {link.description}
-                  </span>
-                </span>
-                <span
-                  aria-hidden="true"
-                  className="ml-4 text-2xl font-black transition group-hover:translate-x-1"
-                >
-                  &gt;
-                </span>
-              </a>
-            ))}
-          </nav>
+          <LinkList links={links} />
 
           <footer className="pt-6 text-center text-sm font-black">
             yourname.vercel.app
@@ -79,5 +30,5 @@ export default function Home() {
         </div>
       </section>
     </main>
-  );
+  )
 }
