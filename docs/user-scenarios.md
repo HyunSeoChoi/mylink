@@ -48,13 +48,14 @@ Future version:
 - URL validation will be needed before saving user-entered links.
 - Authentication will be needed before personal link management.
 
-## Scenario 5: Owner Temporarily Adds a Link
+## Scenario 5: Owner Adds a Link With Firestore
 
 1. The owner opens `/mypage`.
 2. The owner types a link title and URL.
 3. The owner clicks the add button.
 4. If either field is empty, the page shows a clear validation message.
 5. If the URL is invalid, the page asks for a valid URL.
-6. If validation passes, the new link appears in the list.
+6. If validation passes, the new link is saved to Firestore.
 7. The input fields are cleared.
-8. If the page is refreshed, the added link disappears because Firebase storage is not connected yet.
+8. The new link appears in the list.
+9. If the page is refreshed, the saved link is loaded again from Firestore.

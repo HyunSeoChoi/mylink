@@ -48,6 +48,22 @@
 - On desktop, the whole page stays centered in a narrow card.
 - On mobile, the card uses most of the screen width.
 
+## Firestore Data Structure
+
+```text
+users
+└── anonymous
+    └── links
+        └── {linkId}
+            ├── title
+            ├── description
+            ├── url
+            ├── icon
+            ├── color
+            ├── createdAt
+            └── updatedAt
+```
+
 ## Link Management Page
 
 ```text

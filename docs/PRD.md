@@ -5,7 +5,7 @@
 - Project name: MyLink
 - Purpose: Collect a personal profile and frequently used links on one shareable page.
 - Target users: Students, creators, job seekers, and anyone who wants to share several links from one profile URL.
-- Current goal: Build a polished public profile page with a data-driven link list, then expand into link management.
+- Current goal: Build a polished public profile page with Firestore-backed link management, then expand into update and delete behavior.
 
 ## Core Value
 
@@ -18,17 +18,18 @@ MyLink helps visitors quickly understand who the owner is and move to the owner'
 - Show a profile section with name, short introduction, and profile image area.
 - Show a vertical list of links.
 - Render the link list from dummy link data.
-- Provide a `/mypage` management page for temporarily adding links.
+- Provide a `/mypage` management page for adding links.
 - Validate empty title, empty URL, and invalid URL input before adding links.
+- Store newly added links in Firestore.
+- Load saved links from `users/anonymous/links`.
 - Open each link in a new browser tab.
 - Keep the layout readable on mobile, tablet, and desktop screens.
 - Keep the project version controlled with Git and pushed to GitHub.
 
 ### Next
 
-- Save link data instead of hardcoding it in the page.
-- Persist newly added links after refresh.
 - Add link update and delete behavior.
+- Replace the temporary `anonymous` user with authenticated user IDs.
 
 ### Later
 
