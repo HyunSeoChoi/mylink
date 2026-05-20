@@ -1,65 +1,74 @@
-import Image from "next/image";
+const links = [
+  {
+    title: "Instagram",
+    description: "Daily photos and campus moments",
+    href: "https://instagram.com",
+  },
+  {
+    title: "Blog",
+    description: "Notes about study, projects, and ideas",
+    href: "https://velog.io",
+  },
+  {
+    title: "Portfolio",
+    description: "Projects, experiments, and contact info",
+    href: "https://github.com/HyunSeoChoi",
+  },
+];
 
 export default function Home() {
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <main className="min-h-screen bg-[#f7f3ea] text-[#1f2933]">
+      <section className="mx-auto flex min-h-screen w-full max-w-xl flex-col px-5 py-8 sm:px-8">
+        <div className="flex flex-1 flex-col justify-center gap-8">
+          <header className="text-center">
+            <div className="mx-auto mb-5 flex h-28 w-28 items-center justify-center overflow-hidden rounded-full border-4 border-white bg-[#2d6a73] shadow-lg">
+              <span className="text-4xl font-bold text-white">HS</span>
+            </div>
+            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-[#2d6a73]">
+              MyLink
+            </p>
+            <h1 className="mt-3 text-4xl font-bold text-[#111827] sm:text-5xl">
+              최현서
+            </h1>
+            <p className="mx-auto mt-4 max-w-md text-base leading-7 text-[#4b5563]">
+              한 곳에서 나를 소개하고, 자주 사용하는 링크를 모아두는
+              개인 프로필 페이지입니다.
+            </p>
+          </header>
+
+          <nav aria-label="profile links" className="flex flex-col gap-3">
+            {links.map((link) => (
+              <a
+                key={link.title}
+                href={link.href}
+                target="_blank"
+                rel="noreferrer"
+                className="group flex min-h-20 items-center justify-between rounded-lg border border-[#d7cdb8] bg-white px-5 py-4 shadow-sm transition hover:-translate-y-0.5 hover:border-[#2d6a73] hover:shadow-md focus:outline-none focus:ring-4 focus:ring-[#2d6a73]/20"
+              >
+                <span className="text-left">
+                  <span className="block text-lg font-semibold text-[#111827]">
+                    {link.title}
+                  </span>
+                  <span className="mt-1 block text-sm leading-6 text-[#6b7280]">
+                    {link.description}
+                  </span>
+                </span>
+                <span
+                  aria-hidden="true"
+                  className="ml-4 text-2xl text-[#2d6a73] transition group-hover:translate-x-1"
+                >
+                  &gt;
+                </span>
+              </a>
+            ))}
+          </nav>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+
+        <footer className="pt-8 text-center text-sm text-[#6b7280]">
+          yourname.vercel.app
+        </footer>
+      </section>
+    </main>
   );
 }
